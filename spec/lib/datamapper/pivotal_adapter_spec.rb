@@ -7,6 +7,19 @@ describe DataMapper::Adapters::PivotalAdapter do
     DataMapper.setup(:pivotal, { :adapter => 'pivotal' })
     @adapter = DataMapper::Repository.adapters[:pivotal]
     
+    class ParentResource
+      include DataMapper::Resource
+      
+      def self.default_repository_name
+        :pivotal
+      end
+      
+      property :id,   Serial
+      property :url,  String
+
+      has n, :pivotal_resources
+    end
+
     class PivotalResource
       include DataMapper::Resource
       
@@ -14,44 +27,56 @@ describe DataMapper::Adapters::PivotalAdapter do
         :pivotal
       end
       
-      property :id,         Integer, :key => true
-      property :parent_id,  Integer, :key => true
-      property :url,        String
+      property :id,   Serial
+      property :url,  String
+      
+      belongs_to :parent_resource
     end
   end
 
   it_should_behave_like 'a DataMapper Adapter'
 
   describe "Resource.all" do
-    describe "when invoked for a non-nested Resource" do
+    attr_reader :resources
+    
+    # describe "when invoked for a non-nested Resource" do
+    #   before(:all) do
+    #     @resources = PivotalResource.all
+    #   end
+    # 
+    #   it "gets a set of Resources" do
+    #     mock_request('http://www.pivotaltracker.com/services/v1/pivotal_resources')
+    # 
+    #     @resources.should_not be_nil
+    #     @resources.first.should be_an_instance_of(PivotalResource)
+    #   end
+    # end
+    
+    describe "when invoked through a Resource association" do
+      attr_reader :resources
+
       before(:all) do
-        @resources = PivotalResource.all
+        parent = ParentResource.all(:id => 100).first
+        @resources = parent.pivotal_resources
       end
+      
+      it "gets a set of resources" do
+        mock_request('http://www.pivotaltracker.com/services/v1/parent_resources/100/pivotal_resources')
 
-      it "gets a set of Resources" do
-        mock_response('http://www.pivotaltracker.com/services/v1/pivotal_resources')
-
-        @resources.should_not be_nil
-        @resources.first.should be_an_instance_of(PivotalResource)
+        resources.should_not be_nil
+        resource = resources.first
+        resource.should be_an_instance_of(PivotalResource)
+        resource.id.should == 200
+        resource.url.should == 'http://localhost/parent_resources/100/pivotal_resources/200'
+        resource.parent_resource_id.should == 100
       end
     end
-
-    describe "when invoked for a nested Resource" do
-      before(:all) do
-        @resources = PivotalResource.all(:parent_id => 100)
-      end
-
-      it "gets a set of Resources" do
-        mock_response('http://www.pivotaltracker.com/services/v1/parents/100/pivotal_resources')
-
-        @resources.should_not be_nil
-        @resources.first.should be_an_instance_of(PivotalResource)
-      end
-    end
-
-    def mock_response(target_url)
+    
+    def mock_request(target_url)
       response = Object.new
-      mock(response).body { '<response><pivotal_resources><pivotal_resource><id>200</id><url>http://localhost/pivotal_resources/200</url></pivotal_resource><pivotal_resources></response>' }
+      mock(response).body {
+        '<response><pivotal_resources><pivotal_resource><id>200</id><url>http://localhost/parent_resources/100/pivotal_resources/200</url><parent_resource_id>100</parent_resource_id></pivotal_resource><pivotal_resources></response>'
+      }
 
       uri = Object.new
       mock(uri).host { 'www.pivotaltracker.com' }

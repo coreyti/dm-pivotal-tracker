@@ -10,7 +10,13 @@ module DataMapper
       TOKEN = ENV['PIVOTAL_TOKEN']
       SERVER = "https://www.pivotaltracker.com/services/v1"
 
+      def read_one(query)
+        # puts "one:  #{query.inspect}"
+        query.model.load([100, "http://www.pivotaltracker.com/services/v1/parent_resources/100"], query)
+      end
+      
       def read_many(query)
+        # puts "many: #{query.inspect}"
         Collection.new(query) do |set|
           read(query, set, true)
         end
@@ -33,10 +39,15 @@ module DataMapper
         end
 
         doc = Hpricot(response.body).at("response/#{plural_path}")
-        (doc/"#{singular_path}").each do |entry|
-          set.load([entry.at("id").inner_html.to_i, entry.at("url").inner_html])
-        end
 
+        (doc/"#{singular_path}").each do |entry|
+          set.load([
+            entry.at("parent_resource_id").inner_html.to_i,
+            entry.at("id").inner_html.to_i,
+            entry.at("url").inner_html
+          ])
+        end
+        
         # return result unless many
       end
 
@@ -48,12 +59,12 @@ module DataMapper
           
           if(property.name.to_s =~ /.*_id$/)
             case property.name
-              when :parent_id
-                raise "parent_id must be expressed using an Integer" unless value.is_a?(Integer)
+              when :parent_resource_id
+                raise "parent_resource_id must be expressed using an Integer" unless value.first.is_a?(Integer)
                 case operator
-                  when :eql then parent_matcher = value
+                  when :eql then parent_matcher = value.first
                 end
-                path << "/#{property.name.to_s.sub(/_id$/, '').pluralize}/#{value}"
+                path << "/#{property.name.to_s.sub(/_id$/, '').pluralize}/#{parent_matcher}"
               else
                 raise "#{property.name} not supported as a condition"
             end
