@@ -18,7 +18,7 @@ module PivotalTracker
 
   def self.generate(args)
     options = parse_args(args)
-    story = Project.first(:id => 294).stories.first(:id => 279446)
+    story = Project.first(:id => options[:project_id]).stories.first(:id => options[:story_id])
     PivotalTracker::Formatters.formatter(options).format([story], options)
   end
 
@@ -31,6 +31,10 @@ module PivotalTracker
 
       opts.on("-p", "--project PROJECT_ID", "Specify the project id") do |project_id|
         options[:project_id] = project_id
+      end
+
+      opts.on("-s", "--story STORY_ID", "Specify the story id") do |story_id|
+        options[:story_id] = story_id
       end
 
       opts.on("-t", "--token TOKEN"," Specify the API token") do |token|
