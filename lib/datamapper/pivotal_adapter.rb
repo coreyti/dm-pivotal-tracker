@@ -38,6 +38,7 @@ module DataMapper
       def extract_options(conditions, model)
         resource_selector = path_segment(model)
         options = {
+          :foreign  => {},
           :ancestry => '',
           :resource => resource_selector,
           :selector => resource_selector
@@ -49,11 +50,14 @@ module DataMapper
           case property.name.to_s
             when 'id'
               options.merge!({
-                :known_id => value,
+                :known_id => value.to_i,
                 :resource => path_segment(model, value)
               })
             when /.*_id$/
-              options.merge!(:ancestry => (options[:ancestry] + path_segment(property, value)))
+              options.merge!({
+                :foreign  => (options[:foreign].merge({ property.name => value.first.to_i })),
+                :ancestry => (options[:ancestry] + path_segment(property, value))
+              })
           end
         end
         
@@ -70,8 +74,8 @@ module DataMapper
         
         doc = Hpricot(response.body).at("response")
         
-        (doc/"#{options[:selector].singularize}").each do |entry|
-          result = { :id => options[:known_id] }
+        (doc/"/#{options[:selector].singularize}").each do |entry|
+          result = { :id => options[:known_id] }.merge(options[:foreign])
           entry.children.each do |child|
             if child.is_a?(Hpricot::Elem)
               as_int = child.inner_html.to_i

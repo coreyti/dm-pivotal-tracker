@@ -18,8 +18,15 @@ module PivotalTracker
 
   def self.generate(args)
     options = parse_args(args)
-    story = Project.first(:id => options[:project_id]).stories.first(:id => options[:story_id])
-    PivotalTracker::Formatters.formatter(options).format([story], options)
+    
+    if options[:story_id]
+      story = Project.first(:id => options[:project_id]).stories.first(:id => options[:story_id])
+      PivotalTracker::Formatters.formatter(options).format([story], options)
+    else
+      stories = Project.first(:id => options[:project_id]).stories
+      stories.each { |story| p story }
+      PivotalTracker::Formatters.formatter(options).format(stories, options)
+    end
   end
 
   def self.parse_args(args)
