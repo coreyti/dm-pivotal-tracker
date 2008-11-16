@@ -2,7 +2,7 @@ require 'rubygems'
 require 'hpricot'
 require 'net/http'
 require 'uri'
-require 'pivotal_tracker'
+# require 'pivotal_tracker'
 
 module DataMapper
   module Adapters
@@ -59,14 +59,14 @@ module DataMapper
 
       def fetch_results(options)
         results = []
-
         resource_uri = URI.parse("#{SERVER}#{options[:ancestry]}#{options[:resource]}")
+
         response = Net::HTTP.start(resource_uri.host, resource_uri.port) do |http|
           http.get(resource_uri.request_uri, {'Token' => TOKEN})
         end
         
         doc = Hpricot(response.body).at("response#{options[:selector]}")
-
+        
         (doc/"#{options[:selector].singularize}").each do |entry|
           result = {}
           entry.children.each do |child|
@@ -86,7 +86,7 @@ module DataMapper
 
       def path_segment(property, value=nil)
         value = value.first if value.is_a?(Array)
-        singular = property.name.to_s.sub(/_id$/, '')
+        singular = property.name.to_s.split('::').last.to_s.sub(/_id$/, '')
         singular = singular.gsub(/([A-Z])/, '_\1').sub(/^_/, '').downcase
         "/#{singular.pluralize}#{value ? '/' + value.to_s : ''}"
       end

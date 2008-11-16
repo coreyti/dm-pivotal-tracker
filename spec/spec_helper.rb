@@ -2,7 +2,7 @@ $LOAD_PATH.unshift File.join(File.dirname(__FILE__), %w[.. lib])
 
 require "rubygems"
 require "spec"
-require 'datamapper'
+require "datamapper"
 
 Spec::Runner.configure do |config|
   config.mock_with :rr
