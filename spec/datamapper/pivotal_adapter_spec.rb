@@ -38,6 +38,20 @@ describe DataMapper::Adapters::PivotalAdapter do
   
   it_should_behave_like 'a DataMapper Adapter'
 
+  describe "Resource.create" do
+    it "should description" do
+      mock_create('http://www.pivotaltracker.com/services/v1/pivotal_resources')
+      
+      resource = TestModule::PivotalResource.new()
+      resource.id.should be_nil
+      resource.url.should be_nil
+      
+      resource.save
+      resource.id.should_not be_nil
+      resource.url.should match(/^http/)
+    end
+  end
+  
   describe "Resource.first" do
     describe "when invoked for a non-nested Resource" do
       it "gets a Resource" do
@@ -86,6 +100,24 @@ describe DataMapper::Adapters::PivotalAdapter do
     end
   end
 
+  def mock_create(target_url, options={})
+    response = Object.new
+    stub(response).body {
+      <<-XML
+      <response success="true">
+        <pivotal_resource>
+          <id type="integer">200</id>
+          <url>http://localhost/pivotal_resources/200</url>
+        </pivotal_resource>
+      </response>
+      XML
+    }
+
+    mock(URI).parse(target_url)
+    # mock(Net::HTTP).start('www.pivotaltracker.com', 80) { response }
+    mock(Net::HTTP).post_form(anything, {}) { response }
+  end
+  
   def mock_parent(target_url)
     response = Object.new
     stub(response).body {
