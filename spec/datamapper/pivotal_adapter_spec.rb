@@ -41,7 +41,7 @@ describe DataMapper::Adapters::PivotalAdapter do
   describe "Resource.first" do
     describe "when invoked for a non-nested Resource" do
       it "gets a Resource" do
-        mock_request('https://www.pivotaltracker.com/services/v1/pivotal_resources/200')
+        mock_request('http://www.pivotaltracker.com/services/v1/pivotal_resources/200')
         resource = TestModule::PivotalResource.first(:id => 200)
 
         resource.should be_an_instance_of(TestModule::PivotalResource)
@@ -55,7 +55,7 @@ describe DataMapper::Adapters::PivotalAdapter do
   describe "Resource.all" do
     describe "when invoked for a non-nested Resource" do
       it "gets a set of Resources" do
-        mock_request('https://www.pivotaltracker.com/services/v1/pivotal_resources')
+        mock_request('http://www.pivotaltracker.com/services/v1/pivotal_resources')
         resources = TestModule::PivotalResource.all
           
         resources.should_not be_nil
@@ -69,12 +69,12 @@ describe DataMapper::Adapters::PivotalAdapter do
     
     describe "when invoked through a Resource association" do
       it "gets a set of resources" do
-        mock_parent('https://www.pivotaltracker.com/services/v1/parent_resources/100')
+        mock_parent('http://www.pivotaltracker.com/services/v1/parent_resources/100')
         parent = TestModule::ParentResource.all(:id => 100).first
 
         resources = parent.pivotal_resources
 
-        mock_request('https://www.pivotaltracker.com/services/v1/parent_resources/100/pivotal_resources')
+        mock_request('http://www.pivotaltracker.com/services/v1/parent_resources/100/pivotal_resources')
         resources.should_not be_nil
 
         resource = resources.first
@@ -89,7 +89,7 @@ describe DataMapper::Adapters::PivotalAdapter do
   def mock_parent(target_url)
     response = Object.new
     stub(response).body {
-      '<response><parent_resources><parent_resource><id>100</id><url>http://localhost/parent_parents/100</url></parent_resource><parent_resources></response>'
+      '<response><parent_resource><id>100</id><url>http://localhost/parent_parents/100</url></parent_resource></response>'
     }
 
     uri = Object.new
@@ -103,7 +103,7 @@ describe DataMapper::Adapters::PivotalAdapter do
   def mock_request(target_url)
     response = Object.new
     stub(response).body {
-      '<response><pivotal_resources><pivotal_resource><id>200</id><url>http://localhost/parent_resources/100/pivotal_resources/200</url><parent_resource_id>100</parent_resource_id></pivotal_resource><pivotal_resources></response>'
+      '<response><pivotal_resource><id>200</id><url>http://localhost/parent_resources/100/pivotal_resources/200</url><parent_resource_id>100</parent_resource_id></pivotal_resource></response>'
     }
 
     uri = Object.new

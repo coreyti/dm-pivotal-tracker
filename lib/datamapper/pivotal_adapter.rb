@@ -8,7 +8,7 @@ module DataMapper
   module Adapters
     class PivotalAdapter < AbstractAdapter
       TOKEN = ENV['PIVOTAL_TOKEN']
-      SERVER = "https://www.pivotaltracker.com/services/v1"
+      SERVER = "http://www.pivotaltracker.com/services/v1"
 
       def read_one(query)
         read(query, query.model, false)
@@ -59,19 +59,20 @@ module DataMapper
 
       def fetch_results(options)
         results = []
-        resource_uri = URI.parse("#{SERVER}#{options[:ancestry]}#{options[:resource]}")
 
+        resource_uri = URI.parse("#{SERVER}#{options[:ancestry]}#{options[:resource]}")
         response = Net::HTTP.start(resource_uri.host, resource_uri.port) do |http|
           http.get(resource_uri.request_uri, {'Token' => TOKEN})
         end
         
-        doc = Hpricot(response.body).at("response#{options[:selector]}")
-        
+        doc = Hpricot(response.body).at("response")
         (doc/"#{options[:selector].singularize}").each do |entry|
           result = {}
           entry.children.each do |child|
-            as_int = child.inner_html.to_i
-            result[child.name.intern] = (as_int == 0 ? child.inner_html : as_int)
+            if child.is_a?(Hpricot::Elem)
+              as_int = child.inner_html.to_i
+              result[child.name.intern] = (as_int == 0 ? child.inner_html : as_int)
+            end
           end
           
           results << result
