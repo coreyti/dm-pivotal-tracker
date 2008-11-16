@@ -11,12 +11,10 @@ module DataMapper
       SERVER = "https://www.pivotaltracker.com/services/v1"
 
       def read_one(query)
-        # puts "one:  #{query.inspect}"
-        query.model.load([100, "http://www.pivotaltracker.com/services/v1/parent_resources/100"], query)
+        read(query, query.model, false)
       end
       
       def read_many(query)
-        # puts "many: #{query.inspect}"
         Collection.new(query) do |set|
           read(query, set, true)
         end
@@ -25,53 +23,72 @@ module DataMapper
       private
       
       def read(query, set, many=true)
-        model      = query.model
-        conditions = query.conditions
-        # match_with = many ? :select : :detect
-
-        parent_path   = parent_resource_path(conditions)
-        singular_path = model.name.gsub(/([A-Z])/, '_\1').sub(/^_/, '').downcase
-        plural_path   = singular_path.pluralize
-
-        resource_uri = URI.parse("http://www.pivotaltracker.com/services/v1#{parent_path}/#{plural_path}")
-        response = Net::HTTP.start(resource_uri.host, resource_uri.port) do |http|
-          http.get(resource_uri.request_uri, {'Token' => TOKEN})
-        end
-
-        doc = Hpricot(response.body).at("response/#{plural_path}")
-
-        (doc/"#{singular_path}").each do |entry|
-          set.load([
-            entry.at("parent_resource_id").inner_html.to_i,
-            entry.at("id").inner_html.to_i,
-            entry.at("url").inner_html
-          ])
-        end
+        options     = extract_options(query.conditions, query.model)
+        repository  = query.repository.name
+        properties  = query.fields
         
-        # return result unless many
+        results = fetch_results(options)
+
+        results.each do |result|
+          values = result_values(result, properties, repository)
+          many ? set.load(values) : (break set.load(values, query))
+        end
       end
-
-      def parent_resource_path(conditions)
-        path = ""
-
+      
+      def extract_options(conditions, model)
+        resource_selector = path_segment(model)
+        options = {
+          :ancestry => '',
+          :resource => resource_selector,
+          :selector => resource_selector
+        }
+        
         conditions.each do |condition|
           operator, property, value = condition
           
-          if(property.name.to_s =~ /.*_id$/)
-            case property.name
-              when :parent_resource_id
-                raise "parent_resource_id must be expressed using an Integer" unless value.first.is_a?(Integer)
-                case operator
-                  when :eql then parent_matcher = value.first
-                end
-                path << "/#{property.name.to_s.sub(/_id$/, '').pluralize}/#{parent_matcher}"
-              else
-                raise "#{property.name} not supported as a condition"
-            end
+          case property.name.to_s
+            when 'id'
+              options.merge!(:resource => path_segment(model, value))
+            when /.*_id$/
+              options.merge!(:ancestry => (options[:ancestry] + path_segment(property, value)))
           end
         end
+        
+        options
+      end
 
-        path
+      def fetch_results(options)
+        results = []
+
+        resource_uri = URI.parse("#{SERVER}#{options[:ancestry]}#{options[:resource]}")
+        response = Net::HTTP.start(resource_uri.host, resource_uri.port) do |http|
+          http.get(resource_uri.request_uri, {'Token' => TOKEN})
+        end
+        
+        doc = Hpricot(response.body).at("response#{options[:selector]}")
+
+        (doc/"#{options[:selector].singularize}").each do |entry|
+          result = {}
+          entry.children.each do |child|
+            as_int = child.inner_html.to_i
+            result[child.name.intern] = (as_int == 0 ? child.inner_html : as_int)
+          end
+          
+          results << result
+        end
+        
+        results
+      end
+      
+      def result_values(result, properties, repository)
+        properties.map { |property| result[property.field(repository).intern] }
+      end
+
+      def path_segment(property, value=nil)
+        value = value.first if value.is_a?(Array)
+        singular = property.name.to_s.sub(/_id$/, '')
+        singular = singular.gsub(/([A-Z])/, '_\1').sub(/^_/, '').downcase
+        "/#{singular.pluralize}#{value ? '/' + value.to_s : ''}"
       end
     end
   end

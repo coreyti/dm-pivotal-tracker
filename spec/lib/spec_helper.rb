@@ -13,3 +13,7 @@ describe "a DataMapper Adapter", :shared => true do
     end
   end
 end
+
+def h(message)
+  message.gsub(/</, '&lt;').gsub(/>/, '&gt;')
+end
