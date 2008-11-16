@@ -1,3 +1,5 @@
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), %w[.. lib])
+
 require "rubygems"
 require 'optparse'
 require 'ostruct'
@@ -6,31 +8,18 @@ require "uri"
 require "hpricot"
 require "date"
 
+require "pivotal_tracker/project"
 require "pivotal_tracker/story"
 require "pivotal_tracker/iteration"
 require "pivotal_tracker/formatters"
 
 module PivotalTracker
-  SERVER = "https://www.pivotaltracker.com/services/v1"
+  DataMapper.setup(:pivotal, { :adapter => 'pivotal' })
 
   def self.generate(args)
     options = parse_args(args)
-
-    uri = URI.parse("#{SERVER}/projects/#{options[:project_id]}/stories")
-
-    connection = Net::HTTP.new(uri.host, 443)
-    connection.use_ssl      = true
-    connection.verify_mode  = OpenSSL::SSL::VERIFY_NONE
-
-    response = connection.get(uri.path, {'Token' => options[:token]})
-
-    current_stories = Hpricot(response.body).search("story").inject([]) do |stories, story|
-      story = Story.from_xml(story)
-      stories << story if story.current?
-      stories
-    end
-
-    PivotalTracker::Formatters.formatter(options).format(current_stories, options)
+    story = Project.first(:id => 294).stories.first(:id => 279446)
+    PivotalTracker::Formatters.formatter(options).format([story], options)
   end
 
   def self.parse_args(args)

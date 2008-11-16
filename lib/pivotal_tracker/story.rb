@@ -1,18 +1,21 @@
+require 'datamapper'
+
 module PivotalTracker
   class Story
-    attr_reader :id, :name, :description, :estimate, :iteration
+    include DataMapper::Resource
 
-    def self.from_xml(doc)
-      id          = doc.at("id").inner_html
-      name        = doc.at("name").inner_html
-      description = doc.at("description").inner_html
-      estimate    = doc.at("estimate").inner_html
-      iteration   = doc.at("iteration")
-
-      iteration = Iteration.from_xml(iteration) unless iteration.nil?
-
-      self.new(id, name, description, estimate, iteration)
+    def self.default_repository_name
+      :pivotal
     end
+
+    property :id,           Serial
+    property :url,          String
+    property :name,         String
+    property :description,  String
+    property :estimate,     Integer
+    
+    belongs_to :project
+    has 1, :interation
 
     def initialize(id, name, description, estimate, iteration)
       @id           = id
@@ -23,7 +26,7 @@ module PivotalTracker
     end
 
     def current?(today = Date.today)
-      !iteration.nil? && iteration.starts_on <= today && iteration.ends_on >= today
+      !@iteration.nil? && @iteration.starts_on <= today && @iteration.ends_on >= today
     end
   end
 end

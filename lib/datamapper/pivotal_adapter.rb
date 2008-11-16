@@ -48,7 +48,10 @@ module DataMapper
           
           case property.name.to_s
             when 'id'
-              options.merge!(:resource => path_segment(model, value))
+              options.merge!({
+                :known_id => value,
+                :resource => path_segment(model, value)
+              })
             when /.*_id$/
               options.merge!(:ancestry => (options[:ancestry] + path_segment(property, value)))
           end
@@ -66,8 +69,9 @@ module DataMapper
         end
         
         doc = Hpricot(response.body).at("response")
+        
         (doc/"#{options[:selector].singularize}").each do |entry|
-          result = {}
+          result = { :id => options[:known_id] }
           entry.children.each do |child|
             if child.is_a?(Hpricot::Elem)
               as_int = child.inner_html.to_i
