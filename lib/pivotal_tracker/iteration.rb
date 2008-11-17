@@ -1,19 +1,14 @@
 module PivotalTracker
   class Iteration
-    attr_reader :number, :starts_on, :ends_on
+    include DataMapper::Resource
 
-    def self.from_xml(doc)
-      number    = doc.at("number").inner_html
-      starts_on = Date.parse(doc.at("start").inner_html)
-      ends_on   = Date.parse(doc.at("finish").inner_html)
-
-      self.new(number, starts_on, ends_on)
+    def self.default_repository_name
+      :pivotal
     end
 
-    def initialize(number, starts_on, ends_on)
-      @number     = number
-      @starts_on  = starts_on
-      @ends_on    = ends_on
-    end
+    property :id,     Serial
+    property :number, Integer
+    property :start,  Date
+    property :finish, Date
   end
 end
