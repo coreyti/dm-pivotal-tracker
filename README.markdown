@@ -1,18 +1,13 @@
 dm-pivotal-tracker
 ==================
 
-A DataMapper adapter and simple CLI client for Pivotal Tracker.
-
-CLI Usage
--------------------
-
-    PIVOTAL_TOKEN="<your token>" ; ./bin/pt -p PROJECT_ID
+A DataMapper adapter for Pivotal Tracker.
 
 Acknowledgements
 -------------------
 
-  * Initial command line tool and other ideas: http://github.com/joshknowles/pt/
   * Pivotal Tracker: http://pivotaltracker.com
+  * Initial command line tool and other ideas: http://github.com/joshknowles/pt/
 
 Requirements
 -------------------
