@@ -1,7 +1,14 @@
-require 'datamapper'
-
 module PivotalTracker
-  class Story < Resource
+  class Story
+    include DataMapper::Resource
+
+    def self.default_repository_name
+      :pivotal
+    end
+
+    property :id,            Serial
+    property :url,           String
+    property :name,          String
     property :description,   String
     property :story_type,    String
     property :estimate,      Integer

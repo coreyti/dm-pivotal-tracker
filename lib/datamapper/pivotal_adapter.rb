@@ -77,8 +77,9 @@ module DataMapper
                 :resource => path_segment(model, value)
               })
             when /.*_id$/
+              int_value = value.is_a?(Array) ? value.first.to_i : value.to_i
               options.merge!({
-                :foreign  => (options[:foreign].merge({ property.name => value.first.to_i })),
+                :foreign  => (options[:foreign].merge({ property.name => int_value })),
                 :ancestry => (options[:ancestry] + path_segment(property, value))
               })
           end
@@ -143,7 +144,6 @@ module DataMapper
 
         resource_uri = URI.parse("#{SERVER}#{options[:ancestry]}#{options[:resource]}")
         response = Net::HTTP.start(resource_uri.host, resource_uri.port) do |http|
-          # get(path, initheader = nil, dest = nil) {|+body_segment+| ...}   
           http.get(resource_uri.request_uri, {'Token' => TOKEN})
         end
         

@@ -1,5 +1,3 @@
-require 'datamapper'
-
 module PivotalTracker
   class Project
     include DataMapper::Resource
@@ -8,14 +6,10 @@ module PivotalTracker
       :pivotal
     end
 
-    property :id,           Serial
-    property :name,         String
-    
-    has n, :stories
+    property :id,            Serial
+    property :url,           String
+    property :name,          String
 
-    def initialize(id, name)
-      @id           = id
-      @name         = name
-    end
+    has n, :stories
   end
 end
