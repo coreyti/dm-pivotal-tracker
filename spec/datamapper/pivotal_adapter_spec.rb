@@ -5,36 +5,23 @@ describe DataMapper::Adapters::PivotalAdapter do
   attr_reader :adapter
   
   before(:all) do
+    # puts "<pre>"
     DataMapper.setup(:pivotal, { :adapter => 'pivotal' })
     @adapter = DataMapper::Repository.adapters[:pivotal]
 
     module TestModule
-      class ParentResource
-        include DataMapper::Resource
-      
-        def self.default_repository_name
-          :pivotal
-        end
-      
-        property :id,   Serial
-        property :url,  String
-
+      class ParentResource < PivotalTracker::Resource
         has n, :pivotal_resources
       end
 
-      class PivotalResource
-        include DataMapper::Resource
-      
-        def self.default_repository_name
-          :pivotal
-        end
-      
-        property :id,   Serial
-        property :url,  String
-      
+      class PivotalResource < PivotalTracker::Resource
         belongs_to :parent_resource
       end
     end
+  end
+  
+  after(:all) do
+    # puts "</pre>"
   end
   
   it_should_behave_like 'a DataMapper Adapter'
@@ -42,12 +29,10 @@ describe DataMapper::Adapters::PivotalAdapter do
   describe "Resource.create" do
     describe "when invoked for a non-nested Resource" do
       it "successfully creates" do
-        pending "CTI: commented code works, but I'm too tired to finish the specs right now"
-        # story = PivotalTracker::Story.create({
-        #   :project_id => PROJECT_ID,
-        #   :name => 'PivotalAdapter test',
-        #   :requested_by => 'Corey Innis'
-        # })
+        mock_create('http://www.pivotaltracker.com/services/v1/projects/100/stories')
+        resource = PivotalTracker::Story.create(:name => 'LaLa', :project_id => 100)
+        resource.id.should == 200
+        resource.url.should == 'http://www.pivotaltracker.com/story/show/200'
       end
     end
     
@@ -119,22 +104,34 @@ describe DataMapper::Adapters::PivotalAdapter do
     end
   end
 
-  def mock_create(target_url, options={})
-    response = Object.new
-    stub(response).body {
-      <<-XML
-      <response success="true">
-        <pivotal_resource>
-          <id type="integer">200</id>
-          <url>http://localhost/pivotal_resources/200</url>
-        </pivotal_resource>
-      </response>
-      XML
-    }
+  def mock_create(target_url)
+    mock.proxy(URI).parse(target_url) do |resource_uri|
+      mock.proxy(Net::HTTP).start(resource_uri.host, resource_uri.port) do |response| 
+        stub(response).body {
+          <<-XML
+          <response success="true">
+            <story>
+              <id type="integer">200</id>
+              <name>LaLa</name>
+              <url>http://www.pivotaltracker.com/story/show/200</url>
+              <project_id>100</project_id>
+            </story>
+          </response>
+          XML
+        }
+        response
+      end
 
-    mock(URI).parse(target_url)
-    # mock(Net::HTTP).start('www.pivotaltracker.com', 80) { response }
-    mock(Net::HTTP).post_form(anything, {}) { response }
+      mock.instance_of(Net::HTTP).post(
+        resource_uri.path,
+        '<story><name>LaLa</name><project_id>100</project_id></story>',
+        {
+          'Token'        => ENV['PIVOTAL_TOKEN'],
+          'Content-Type' => 'application/xml'
+        }
+      )
+      resource_uri
+    end
   end
   
   def mock_parent(target_url)

@@ -126,7 +126,7 @@ module DataMapper
         doc = Hpricot(response.body).at("response")
         
         # TODO: CTI - There's only one, so quit yer looping
-        (doc/"/#{options[:resource]}").each do |entry|
+        (doc/"/#{options[:resource].singularize}").each do |entry|
           entry.children.each do |child|
             if child.is_a?(Hpricot::Elem)
               as_int = child.inner_html.to_i
