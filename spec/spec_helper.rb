@@ -24,3 +24,13 @@ end
 def h(message)
   message.gsub(/</, '&lt;').gsub(/>/, '&gt;')
 end
+
+module Spec::Example::ExampleMethods
+  def mock_get(url, response_body)
+    response = Object.new
+    stub(response).body { response_body }
+    
+    mock(Net::HTTP).start('www.pivotaltracker.com', 80)
+    mock.proxy(adapter).request { response }
+  end
+end

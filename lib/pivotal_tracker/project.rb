@@ -7,7 +7,6 @@ module PivotalTracker
     end
 
     property :id,            Serial
-    property :url,           String
     property :name,          String
 
     has n, :stories
