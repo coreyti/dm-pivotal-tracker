@@ -42,6 +42,27 @@ module Spec::Example::ExampleMethods
     mock.proxy(Net::HTTP).start('www.pivotaltracker.com', 80)
     mock.proxy(adapter).http_request { response }
   end
+  
+  def mock_post(resource_url, data)
+    resource_uri  = URI.parse(resource_url)
+    resource_path = resource_uri.path
+
+    result = yield
+    response = result
+    if(result.is_a?(String))
+      response = Object.new
+      stub(response).body { result }
+    end
+    
+    mock(Net::HTTP::Post).new(resource_path, data, {
+      'Content-Type' => 'application/xml',
+      'Token'        => ENV['PIVOTAL_TOKEN']
+    })
+    mock.instance_of(Net::HTTP).request(anything)
+
+    mock.proxy(Net::HTTP).start('www.pivotaltracker.com', 80)
+    mock.proxy(adapter).http_request { response }
+  end
 end
 
 describe "a DataMapper Adapter", :shared => true do

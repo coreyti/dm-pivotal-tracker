@@ -8,6 +8,25 @@ module DataMapper
     class PivotalAdapter < AbstractAdapter
       include Extlib
 
+      def create(resources)
+        count = 0
+        
+        resources.each do |resource|
+          ancestry_meta = ancestry_meta_TEMP(resource)
+          resource_name = resource_name(resource.class)
+          response      = http_post("#{ancestry_meta[:path]}/#{resource_name.pluralize}", resource.to_xml)
+          success       = true # response.instance_of?(Net::HTTPCreated)
+      
+          if success
+            count += 1
+            result   = read_result(response, resource_name)
+            resource.attributes = result[0]
+          end
+        end
+        
+        count
+      end
+
       def read_one(query)
         resource   = nil
         conditions = query.conditions
@@ -72,6 +91,17 @@ module DataMapper
         end
       end
 
+      def http_post(resource_uri, data)
+        http_request do |http, base|
+          headers = {
+            'Content-Type' => 'application/xml',
+            'Token'        => @uri[:token]
+          }
+          request = Net::HTTP::Post.new("#{base}#{resource_uri}", data, headers)
+          http.request(request)
+        end
+      end
+
       def http_request
         response = nil
         base_uri = URI.parse(@uri[:server])
@@ -86,8 +116,8 @@ module DataMapper
         Inflection.underscore(model.name.split('::').last)
       end
       
-      def ancestor_name(field)
-        field.name.to_s.sub(/_id$/, '')
+      def ancestor_name(field_name)
+        field_name.to_s.sub(/_id$/, '')
       end
 
       def ancestry_meta(conditions)
@@ -99,8 +129,26 @@ module DataMapper
         conditions.each do |condition|
           operator, field, value = condition
           if field.name.to_s =~ /.*_id$/
-            meta[:path] << "/#{ancestor_name(field).pluralize}/#{value}"
+            meta[:path] << "/#{ancestor_name(field.name).pluralize}/#{value}"
             meta[:data][field.name] = value.is_a?(Array) ? value.first : value
+          end
+        end
+
+        meta
+      end
+
+      def ancestry_meta_TEMP(resource)
+        meta = {
+          :path => '',
+          :data => {}
+        }
+
+        resource.attributes.each do |attribute|
+          attribute_name = attribute[0]
+          if attribute_name.to_s =~ /.*_id$/
+            value = resource.attribute_get(attribute_name)
+            meta[:path] << "/#{ancestor_name(attribute_name).pluralize}/#{value}"
+            meta[:data][attribute_name] = value.is_a?(Array) ? value.first : value
           end
         end
 

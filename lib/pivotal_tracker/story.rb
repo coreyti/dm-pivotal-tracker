@@ -18,5 +18,15 @@ module PivotalTracker
     
     belongs_to :project
     has 1, :iteration
+
+    # TODO: CTI - blech! get rid of this.
+    def to_xml
+      xml = "<story>"
+      loaded_attributes.each do |attr_name|
+        attr_value = attribute_get(attr_name)
+        xml << "<#{attr_name}>#{attr_value}</#{attr_name}>" unless attr_value.blank? || attr_name.to_s =~ /.*_id$/
+      end
+      xml + "</story>"
+    end
   end
 end

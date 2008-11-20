@@ -5,8 +5,54 @@ describe DataMapper::Adapters::PivotalAdapter do
   it_should_behave_like 'a DataMapper Adapter'
   
   describe "create" do
-    it "is pending" do
-      pending
+    describe "basic initial coverage" do
+      before do
+        mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
+          <<-XML
+          <response success="true">
+            <project>
+              <name>Sample Project</name>
+            </project>
+          </response>
+          XML
+        end
+
+        mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories') do
+          <<-XML
+          <response success="true">
+            <stories count="2">
+              <story>
+                <id type="integer">100</id>
+                <name>Story One</name>
+              </story>
+            </stories>
+          </response>
+          XML
+        end
+
+        mock_post(
+          'http://www.pivotaltracker.com/services/v1/projects/1/stories',
+          '<story><name>Sample Story</name></story>'
+        ) do
+          <<-XML
+          <response success="true">
+            <story>
+              <id type="integer">200</id>
+              <name>Sample Story</name>
+            </story>
+          </response>
+          XML
+        end
+      end
+
+      it "succeeds" do
+        project = PivotalTracker::Project.get(1)
+        story = project.stories.create(:name => 'Sample Story')
+        story.should_not be_nil
+        story.id.should be_an_instance_of(Fixnum)
+        story.id.should == 200
+        story.should be_an_instance_of(PivotalTracker::Story)
+      end
     end
   end
   
@@ -30,11 +76,11 @@ describe DataMapper::Adapters::PivotalAdapter do
         end
         
         it "returns the Resource" do
-          resource = PivotalTracker::Project.get(1)
-          resource.should_not be_nil
-          resource.id.should be_an_instance_of(Fixnum)
-          resource.id.should == 1
-          resource.should be_an_instance_of(PivotalTracker::Project)
+          project = PivotalTracker::Project.get(1)
+          project.should_not be_nil
+          project.id.should be_an_instance_of(Fixnum)
+          project.id.should == 1
+          project.should be_an_instance_of(PivotalTracker::Project)
         end
       end
       
@@ -46,8 +92,8 @@ describe DataMapper::Adapters::PivotalAdapter do
         end
         
         it "returns nil" do
-          resource = PivotalTracker::Project.get(1)
-          resource.should be_nil
+          project = PivotalTracker::Project.get(1)
+          project.should be_nil
         end
       end
 
