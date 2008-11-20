@@ -42,10 +42,6 @@ module Spec::Example::ExampleMethods
     mock.proxy(Net::HTTP).start('www.pivotaltracker.com', 80)
     mock.proxy(adapter).http_request { response }
   end
-
-  def h(message)
-    message.gsub(/</, '&lt;').gsub(/>/, '&gt;')
-  end
 end
 
 describe "a DataMapper Adapter", :shared => true do
@@ -59,4 +55,8 @@ describe "a DataMapper Adapter", :shared => true do
       adapter.should respond_to(meth.intern)
     end
   end
+end
+
+def h(message)
+  message.gsub(/</, '&lt;').gsub(/>/, '&gt;')
 end

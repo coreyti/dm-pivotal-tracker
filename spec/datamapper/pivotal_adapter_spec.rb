@@ -122,27 +122,43 @@ describe DataMapper::Adapters::PivotalAdapter do
 
         it "executes an HTTP GET" do
           project = PivotalTracker::Project.get(1)
-          stories = project.stories.all(:id.gt => 0)
+          project.stories.all.length
+        end
+
+        it "returns a list of Resources, one per response XML entry" do
+          project = PivotalTracker::Project.get(1)
+          stories = project.stories.all
 
           stories.length.should == 2
           stories[0].id.should == 100
           stories[1].id.should == 200
         end
-        
-        it "uh oh, how about with Resource#all with no args" do
-          pending
-          project = PivotalTracker::Project.get(1)
-          project.stories.all
-        end
-        
-        it "returns a list of Resources, one per response XML entry" do
-          pending
-        end
       end
-      
+
       context "when a Resource does not exist" do
         it "returns an empty list" do
           pending
+        end
+      end
+
+      context "when invoked via Resource#all, with limiting conditions" do
+        before do
+          mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
+            <<-XML
+            <response success="true">
+              <project>
+                <name>Sample Project</name>
+              </project>
+            </response>
+            XML
+          end
+        end
+
+        it "returns a list of Resources, one per response XML entry" do
+          project = PivotalTracker::Project.get(1)
+          lambda do
+            stories = project.stories.all(:name => 'Story Two')
+          end.should raise_error(NotImplementedError)
         end
       end
     end

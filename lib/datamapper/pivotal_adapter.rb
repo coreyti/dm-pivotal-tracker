@@ -45,7 +45,8 @@ module DataMapper
           properties    = query.fields
           resource_name = resource_name(query.model)
           ancestry_meta = ancestry_meta(conditions)
-
+          limiting_read = limiting_read(conditions)
+          
           # TODO: consider refactoring to #read(query, set, many=false)
 
           response = http_get("#{ancestry_meta[:path]}/#{resource_name.pluralize}")
@@ -106,6 +107,15 @@ module DataMapper
         meta
       end
 
+      def limiting_read(conditions)
+        conditions.each do |condition|
+          operator, field, value = condition
+          unless field.name.to_s =~ /.*id$/
+            raise NotImplementedError.new
+          end
+        end
+      end
+      
       def response_failed?(response)
         response == Net::HTTPNotFound
       end
