@@ -26,8 +26,10 @@ def h(message)
 end
 
 module Spec::Example::ExampleMethods
-  def mock_get(uri, response_body)
-    resource_path = uri.sub(/http:\/\/www.pivotaltracker.com\/services\/v1/, '')
+  def mock_get(resource_url, response_body)
+    resource_uri  = URI.parse(resource_url)
+    resource_path = resource_uri.path
+
     response = Object.new
     stub(response).body { response_body }
     

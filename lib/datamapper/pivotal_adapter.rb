@@ -36,9 +36,9 @@ module DataMapper
       protected
 
       def http_get(resource_uri)
-        request do |http|
+        request do |http, base|
           headers = { 'Token' => @uri[:token] }
-          request = Net::HTTP::Get.new(resource_uri, headers)
+          request = Net::HTTP::Get.new("#{base}#{resource_uri}", headers)
           http.request(request)
         end
       end
@@ -48,7 +48,7 @@ module DataMapper
         base_uri = URI.parse(@uri[:server])
 
         Net::HTTP.start(base_uri.host, base_uri.port) do |http|
-          response = yield(http)
+          response = yield(http, base_uri.path)
         end
         response
       end
