@@ -37,8 +37,8 @@ module DataMapper
 
       def http_get(resource_uri)
         request do |http|
-          puts 'ALERT! real request {}'
-          request = Net::HTTP::Get.new(resource_uri)
+          headers = { 'Token' => @uri[:token] }
+          request = Net::HTTP::Get.new(resource_uri, headers)
           http.request(request)
         end
       end
@@ -48,7 +48,6 @@ module DataMapper
         base_uri = URI.parse(@uri[:server])
 
         Net::HTTP.start(base_uri.host, base_uri.port) do |http|
-          puts 'ALERT! real Net::HTTP.start'
           response = yield(http)
         end
         response

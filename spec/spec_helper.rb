@@ -26,11 +26,15 @@ def h(message)
 end
 
 module Spec::Example::ExampleMethods
-  def mock_get(url, response_body)
+  def mock_get(uri, response_body)
+    resource_path = uri.sub(/http:\/\/www.pivotaltracker.com\/services\/v1/, '')
     response = Object.new
     stub(response).body { response_body }
     
-    mock(Net::HTTP).start('www.pivotaltracker.com', 80)
+    mock(Net::HTTP::Get).new(resource_path, { 'Token' => ENV['PIVOTAL_TOKEN'] })
+    mock.instance_of(Net::HTTP).request(anything)
+
+    mock.proxy(Net::HTTP).start('www.pivotaltracker.com', 80)
     mock.proxy(adapter).request { response }
   end
 end
