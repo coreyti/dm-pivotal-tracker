@@ -41,6 +41,6 @@ module Spec::Example::ExampleMethods
     mock.instance_of(Net::HTTP).request(anything)
 
     mock.proxy(Net::HTTP).start('www.pivotaltracker.com', 80)
-    mock.proxy(adapter).request { response }
+    mock.proxy(adapter).http_request { response }
   end
 end

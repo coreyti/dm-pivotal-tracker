@@ -33,18 +33,45 @@ module DataMapper
 
         resource
       end
-      
+
+      def read_many(query)
+        conditions = query.conditions
+
+        if conditions.empty? # && query.limit == 1
+          raise 'ERROR: not yet handling empty conditions (Resource.first ???)'
+        else
+          model         = query.model
+          repository    = query.repository.name
+          properties    = query.fields
+          resource_name = resource_name(query.model)
+          ancestry_meta = ancestry_meta(conditions)
+
+          # TODO: consider refactoring to #read(query, set, many=false)
+
+          response = http_get("#{ancestry_meta[:path]}/#{resource_name.pluralize}")
+          return nil if response_failed?(response)
+
+          result = read_result(response, resource_name, ancestry_meta[:data])
+          Collection.new(query) do |collection|
+            result.each do |entry|
+              values = read_values(entry, properties, repository)
+              collection.load(values)
+            end
+          end
+        end
+      end
+
       protected
 
       def http_get(resource_uri)
-        request do |http, base|
+        http_request do |http, base|
           headers = { 'Token' => @uri[:token] }
           request = Net::HTTP::Get.new("#{base}#{resource_uri}", headers)
           http.request(request)
         end
       end
-      
-      def request
+
+      def http_request
         response = nil
         base_uri = URI.parse(@uri[:server])
 
@@ -53,21 +80,42 @@ module DataMapper
         end
         response
       end
-      
+
       def resource_name(model)
         Inflection.underscore(model.name.split('::').last)
       end
       
+      def ancestor_name(field)
+        field.name.to_s.sub(/_id$/, '')
+      end
+
+      def ancestry_meta(conditions)
+        meta = {
+          :path => '',
+          :data => {}
+        }
+
+        conditions.each do |condition|
+          operator, field, value = condition
+          if field.name.to_s =~ /.*_id$/
+            meta[:path] << "/#{ancestor_name(field).pluralize}/#{value}"
+            meta[:data][field.name] = value.is_a?(Array) ? value.first : value
+          end
+        end
+
+        meta
+      end
+
       def response_failed?(response)
         response == Net::HTTPNotFound
       end
-      
+
       def read_result(response, resource_name, defaults = {})
         results = []
         doc = Hpricot(response.body).at("response")
         
-        (doc/"/#{resource_name}").each do |resource_node|
-          result = defaults
+        (doc/"//#{resource_name}").each do |resource_node|
+          result = defaults.dup
           resource_node.children.each do |child|
             if child.is_a?(Hpricot::Elem)
               as_int = child.inner_html.to_i
@@ -80,7 +128,7 @@ module DataMapper
         
         results
       end
-      
+
       def read_values(result, properties, repository)
         properties.map { |property| result[property.field(repository).intern] }
       end

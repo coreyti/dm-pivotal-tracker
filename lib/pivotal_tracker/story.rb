@@ -15,7 +15,6 @@ module PivotalTracker
     property :requested_by,  String
     property :current_state, String
     property :created_at,    String
-    property :project_id,    Integer
     
     belongs_to :project
     has 1, :iteration
