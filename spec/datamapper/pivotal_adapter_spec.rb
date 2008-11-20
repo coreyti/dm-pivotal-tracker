@@ -2,22 +2,6 @@ require File.join(File.dirname(__FILE__), '..', 'spec_helper.rb')
 require 'pivotal_tracker'
 
 describe DataMapper::Adapters::PivotalAdapter do
-  attr_reader :adapter
-  
-  before(:all) do
-    puts "<pre>"
-    DataMapper.setup(:pivotal, {
-      :adapter => 'pivotal',
-      :token   => ENV['PIVOTAL_TOKEN'],
-      :server  => 'http://www.pivotaltracker.com/services/v1'
-    })
-    @adapter = DataMapper::Repository.adapters[:pivotal]
-  end
-  
-  after(:all) do
-    puts "</pre>"
-  end
-  
   it_should_behave_like 'a DataMapper Adapter'
   
   describe "create" do
