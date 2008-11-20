@@ -28,7 +28,7 @@ describe DataMapper::Adapters::PivotalAdapter do
     describe "PivotalAdapter#read_one" do
       context "when the Resource exists" do
         before do
-          mock_get('http://www.pivotaltracker.com/services/v1/projects/1',
+          mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
             <<-XML
             <response success="true">
               <project>
@@ -36,7 +36,7 @@ describe DataMapper::Adapters::PivotalAdapter do
               </project>
             </response>
             XML
-          )
+          end
         end
         
         it "executes an HTTP GET" do
@@ -54,7 +54,16 @@ describe DataMapper::Adapters::PivotalAdapter do
       end
       
       context "when the Resource does not exist" do
+        before do
+          mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
+            Net::HTTPNotFound
+          end
+        end
         
+        it "returns nil" do
+          resource = PivotalTracker::Project.get(1)
+          resource.should be_nil
+        end
       end
     end
   end

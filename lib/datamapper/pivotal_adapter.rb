@@ -24,9 +24,10 @@ module DataMapper
           # TODO: consider refactoring to #read(query, set, many=false)
 
           response = http_get("/#{resource_name.pluralize}/#{resource_id}")
+          return nil if response_failed?(response)
+          
           result   = read_result(response, resource_name, { :id => resource_id })
           values   = read_values(result[0], properties, repository)
-
           resource = model.load(values, query)
         end
 
@@ -55,6 +56,10 @@ module DataMapper
       
       def resource_name(model)
         Inflection.underscore(model.name.split('::').last)
+      end
+      
+      def response_failed?(response)
+        response == Net::HTTPNotFound
       end
       
       def read_result(response, resource_name, defaults = {})

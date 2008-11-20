@@ -26,12 +26,16 @@ def h(message)
 end
 
 module Spec::Example::ExampleMethods
-  def mock_get(resource_url, response_body)
+  def mock_get(resource_url)
     resource_uri  = URI.parse(resource_url)
     resource_path = resource_uri.path
 
-    response = Object.new
-    stub(response).body { response_body }
+    result = yield
+    response = result # e.g., Net::HTTPNotFound
+    if(result.is_a?(String))
+      response = Object.new
+      stub(response).body { result }
+    end
     
     mock(Net::HTTP::Get).new(resource_path, { 'Token' => ENV['PIVOTAL_TOKEN'] })
     mock.instance_of(Net::HTTP).request(anything)
