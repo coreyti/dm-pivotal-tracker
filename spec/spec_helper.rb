@@ -36,6 +36,10 @@ module Spec::Example::ExampleMethods
       stub(response).body { result }
     end
     
+    # mock.instance_of(Net::HTTP).send_request('GET', resource_path, nil, {
+    #   'Token' => ENV['PIVOTAL_TOKEN']
+    # })
+
     mock(Net::HTTP::Get).new(resource_path, { 'Token' => ENV['PIVOTAL_TOKEN'] })
     mock.instance_of(Net::HTTP).request(anything)
 
@@ -77,6 +81,25 @@ module Spec::Example::ExampleMethods
     mock.instance_of(Net::HTTP).send_request('PUT', resource_path, data, {
       'Content-Type' => 'application/xml',
       'Token'        => ENV['PIVOTAL_TOKEN']
+    })
+
+    mock.proxy(Net::HTTP).start('www.pivotaltracker.com', 80)
+    mock.proxy(adapter).http_request { response }
+  end
+
+  def mock_delete(resource_url)
+    resource_uri  = URI.parse(resource_url)
+    resource_path = resource_uri.path
+
+    result = yield
+    response = result
+    if(result.is_a?(String))
+      response = Object.new
+      stub(response).body { result }
+    end
+    
+    mock.instance_of(Net::HTTP).send_request('DELETE', resource_path, nil, {
+      'Token' => ENV['PIVOTAL_TOKEN']
     })
 
     mock.proxy(Net::HTTP).start('www.pivotaltracker.com', 80)

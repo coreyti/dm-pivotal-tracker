@@ -97,6 +97,19 @@ module DataMapper
         response.kind_of?(Net::HTTPSuccess) ? 1 : 0
       end
 
+      def delete(query)
+        resource_id = query.conditions.first[2]
+        resource = nil
+        query.repository.scope do
+          resource = query.model.get(resource_id)
+        end
+
+        ancestry_meta = ancestry_meta_TEMP(resource)
+        resource_name = resource_name(resource.class)
+        response = http_delete("#{ancestry_meta[:path]}/#{resource_name.pluralize}/#{resource_id}")
+        response.kind_of?(Net::HTTPSuccess) ? 1 : 0
+      end
+
       protected
 
       def http_get(resource_uri)
@@ -104,6 +117,7 @@ module DataMapper
           headers = { 'Token' => @uri[:token] }
           request = Net::HTTP::Get.new("#{base}#{resource_uri}", headers)
           http.request(request)
+          # http.send_request('GET', "#{base}#{resource_uri}", nil, headers)
         end
       end
 
@@ -124,6 +138,15 @@ module DataMapper
             'Token'        => @uri[:token]
           }
           http.send_request('PUT', "#{base}#{resource_uri}", data, headers)
+        end
+      end
+
+      def http_delete(resource_uri)
+        http_request do |http, base|
+          headers = {
+            'Token'        => @uri[:token]
+          }
+          http.send_request('DELETE', "#{base}#{resource_uri}", nil, headers)
         end
       end
 
