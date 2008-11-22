@@ -7,28 +7,8 @@ describe DataMapper::Adapters::PivotalAdapter do
   describe "create" do
     describe "basic initial coverage" do
       before do
-        mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
-          <<-XML
-          <response success="true">
-            <project>
-              <name>Sample Project</name>
-            </project>
-          </response>
-          XML
-        end
-
-        mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories') do
-          <<-XML
-          <response success="true">
-            <stories count="1">
-              <story>
-                <id type="integer">100</id>
-                <name>Story One</name>
-              </story>
-            </stories>
-          </response>
-          XML
-        end
+        mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
+        mock_read_n(PivotalTracker::Story)   { [{ :name => "Story One", :project_id => 1, :id => 100 }] }
 
         mock_post(
           'http://www.pivotaltracker.com/services/v1/projects/1/stories',
@@ -69,10 +49,6 @@ describe DataMapper::Adapters::PivotalAdapter do
             </response>
             XML
           end
-        end
-        
-        it "executes an HTTP GET" do
-          PivotalTracker::Project.get(1)
         end
         
         it "returns the Resource" do
@@ -116,34 +92,28 @@ describe DataMapper::Adapters::PivotalAdapter do
             XML
           end
 
-          mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories') do
+          mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories/100') do
             <<-XML
             <response success="true">
-              <stories count="1">
-                <story>
-                  <id type="integer">100</id>
-                  <name>Story One</name>
-                </story>
-              </stories>
+              <story>
+                <id type="integer">100</id>
+                <name>Story One</name>
+              </story>
             </response>
             XML
           end
         end
 
         describe "finding via a foreign key" do
-          it "executes an HTTP GET with the Resource ancestry in the URL" do
-            pending
-            PivotalTracker::Story.first(:project_id => 1)
-          end
-
           it "returns the nested Resource" do
             pending
+            PivotalTracker::Story.first(:project_id => 1)
           end
         end
         
         describe "finding via an association" do
           it "returns the nested Resource" do
-            story = PivotalTracker::Project.get(1).stories.get(100)
+            story = PivotalTracker::Project.get(1).stories.first(:id => 100)
             story.should_not be_nil
             story.id.should be_an_instance_of(Fixnum)
             story.id.should == 100
@@ -184,11 +154,6 @@ describe DataMapper::Adapters::PivotalAdapter do
           end
         end
 
-        it "executes an HTTP GET" do
-          project = PivotalTracker::Project.get(1)
-          project.stories.all.length
-        end
-
         it "returns a list of Resources, one per response XML entry" do
           project = PivotalTracker::Project.get(1)
           stories = project.stories.all
@@ -218,7 +183,11 @@ describe DataMapper::Adapters::PivotalAdapter do
           end
         end
 
-        it "returns a list of Resources, one per response XML entry" do
+        it "returns a list of Resources" do
+          pending
+        end
+        
+        it "raise an error for unsupported conditions" do
           project = PivotalTracker::Project.get(1)
           lambda do
             stories = project.stories.all(:name => 'Story Two')
@@ -292,28 +261,8 @@ describe DataMapper::Adapters::PivotalAdapter do
   describe "update" do
     context "when the Resource exists" do
       before do
-        mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
-          <<-XML
-          <response success="true">
-            <project>
-              <name>Sample Project</name>
-            </project>
-          </response>
-          XML
-        end
-        
-        mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories') do
-          <<-XML
-          <response success="true">
-            <stories count="1">
-              <story>
-                <id type="integer">100</id>
-                <name>Story One</name>
-              </story>
-            </stories>
-          </response>
-          XML
-        end
+        mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
+        mock_read_n(PivotalTracker::Story)   { [{ :name => "Story One", :project_id => 1, :id => 100 }] }
       end
       
       it "updates the Resource" do
@@ -337,28 +286,8 @@ describe DataMapper::Adapters::PivotalAdapter do
       attr_reader :story
 
       before do
-        mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
-          <<-XML
-          <response success="true">
-            <project>
-              <name>Sample Project</name>
-            </project>
-          </response>
-          XML
-        end
-
-        mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories') do
-          <<-XML
-          <response success="true">
-            <stories count="1">
-              <story>
-                <id type="integer">100</id>
-                <name>Story One</name>
-              </story>
-            </stories>
-          </response>
-          XML
-        end
+        mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
+        mock_read_n(PivotalTracker::Story)   { [{ :name => "Story One", :project_id => 1, :id => 100 }] }
 
         @story = PivotalTracker::Project.get(1).stories.get(100)
       end
