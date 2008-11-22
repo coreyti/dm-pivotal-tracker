@@ -44,7 +44,7 @@ module DataMapper
 
           response = http_get("/#{resource_name.pluralize}/#{resource_id}")
           return nil if response_failed?(response)
-          
+
           result   = read_result(response, resource_name, { :id => resource_id })
           values   = read_values(result[0], properties, repository)
           resource = model.load(values, query)
@@ -81,6 +81,22 @@ module DataMapper
         end
       end
 
+      def update(attributes, query)
+        resource_id = query.conditions.first[2]
+        resource = nil
+        query.repository.scope do
+          resource = query.model.get(resource_id)
+        end
+        attributes.each do |attr, val|
+          resource.send("#{attr.name}=", val)
+        end
+        
+        ancestry_meta = ancestry_meta_TEMP(resource)
+        resource_name = resource_name(resource.class)
+        response = http_put("#{ancestry_meta[:path]}/#{resource_name.pluralize}/#{resource_id}", resource.to_xml({ :only => :dirty }))
+        response.kind_of?(Net::HTTPSuccess) ? 1 : 0
+      end
+
       protected
 
       def http_get(resource_uri)
@@ -97,8 +113,17 @@ module DataMapper
             'Content-Type' => 'application/xml',
             'Token'        => @uri[:token]
           }
-          request = Net::HTTP::Post.new("#{base}#{resource_uri}", data, headers)
-          http.request(request)
+          http.send_request('POST', "#{base}#{resource_uri}", data, headers)
+        end
+      end
+
+      def http_put(resource_uri, data)
+        http_request do |http, base|
+          headers = {
+            'Content-Type' => 'application/xml',
+            'Token'        => @uri[:token]
+          }
+          http.send_request('PUT', "#{base}#{resource_uri}", data, headers)
         end
       end
 

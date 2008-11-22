@@ -20,7 +20,7 @@ describe DataMapper::Adapters::PivotalAdapter do
         mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories') do
           <<-XML
           <response success="true">
-            <stories count="2">
+            <stories count="1">
               <story>
                 <id type="integer">100</id>
                 <name>Story One</name>
@@ -97,15 +97,34 @@ describe DataMapper::Adapters::PivotalAdapter do
         end
       end
 
+      context "when the token does not allow access to the Resource" do
+        it "either returns nil, or raises (TBD)" do
+          pending
+          # response: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response success=\"false\">\n <message>The authenticated user for this token is not allowed to view this project</message>\n</response>\n" result nil
+        end
+      end
+      
       context "when the Resource is found as a nested Resource" do
         before do
-          mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories/100') do
+          mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
             <<-XML
             <response success="true">
-              <story>
-                <id type="integer">100</id>
-                <name>Sample Story</name>
-              </story>
+              <project>
+                <name>Sample Project</name>
+              </project>
+            </response>
+            XML
+          end
+
+          mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories') do
+            <<-XML
+            <response success="true">
+              <stories count="1">
+                <story>
+                  <id type="integer">100</id>
+                  <name>Story One</name>
+                </story>
+              </stories>
             </response>
             XML
           end
@@ -123,13 +142,12 @@ describe DataMapper::Adapters::PivotalAdapter do
         end
         
         describe "finding via an association" do
-          it "executes an HTTP GET with the Resource ancestry in the URL" do
-            pending
-            PivotalTracker::Project.get(1).stories.first
-          end
-
           it "returns the nested Resource" do
-            pending
+            story = PivotalTracker::Project.get(1).stories.get(100)
+            story.should_not be_nil
+            story.id.should be_an_instance_of(Fixnum)
+            story.id.should == 100
+            story.should be_an_instance_of(PivotalTracker::Story)
           end
         end
       end
@@ -211,8 +229,56 @@ describe DataMapper::Adapters::PivotalAdapter do
   end
 
   describe "update" do
-    it "is pending" do
-      pending
+    context "when the Resource exists" do
+      attr_reader :story, :new_attributes
+      
+      before do
+        @new_attributes = { :name => 'New Story Name' }
+
+        mock_get('http://www.pivotaltracker.com/services/v1/projects/1') do
+          <<-XML
+          <response success="true">
+            <project>
+              <name>Sample Project</name>
+            </project>
+          </response>
+          XML
+        end
+
+        mock_get('http://www.pivotaltracker.com/services/v1/projects/1/stories') do
+          <<-XML
+          <response success="true">
+            <stories count="1">
+              <story>
+                <id type="integer">100</id>
+                <name>Story One</name>
+              </story>
+            </stories>
+          </response>
+          XML
+        end
+
+        @story = PivotalTracker::Project.get(1).stories.get(100)
+      end
+      
+      it "updates the Resource" do
+        mock_put(
+          'http://www.pivotaltracker.com/services/v1/projects/1/stories/100',
+          "<story><name>#{new_attributes[:name]}</name></story>"
+        ) do
+          <<-XML
+          <response success="true">
+            <story>
+              <id type="integer">100</id>
+              <name>#{new_attributes[:name]}</name>
+            </story>
+          </response>
+          XML
+        end
+
+        story.update_attributes(new_attributes)
+        puts "updated story: #{h story}"
+      end
     end
   end
 

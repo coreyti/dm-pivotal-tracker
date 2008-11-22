@@ -20,11 +20,17 @@ module PivotalTracker
     has 1, :iteration
 
     # TODO: CTI - blech! get rid of this.
-    def to_xml
+    def to_xml(options = {})
       xml = "<story>"
-      loaded_attributes.each do |attr_name|
-        attr_value = attribute_get(attr_name)
-        xml << "<#{attr_name}>#{attr_value}</#{attr_name}>" unless attr_value.blank? || attr_name.to_s =~ /.*_id$/
+      if options[:only] == :dirty
+        dirty_attributes.each do |attribute, value|
+          xml << "<#{attribute.name}>#{value}</#{attribute.name}>"
+        end
+      else
+        loaded_attributes.each do |attr_name|
+          attr_value = attribute_get(attr_name)
+          xml << "<#{attr_name}>#{attr_value}</#{attr_name}>" unless attr_value.blank? || attr_name.to_s =~ /.*_id$/
+        end
       end
       xml + "</story>"
     end
