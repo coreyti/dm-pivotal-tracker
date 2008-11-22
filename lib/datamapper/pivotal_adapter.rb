@@ -38,24 +38,26 @@ module DataMapper
           repository    = query.repository.name
           properties    = query.fields
           resource_name = resource_name(query.model)
-          resource_id   = conditions.first[2]
+          ancestry_meta = ancestry_meta(conditions)
+          id_condition  = conditions.select do |condition|
+            condition[0] == :eql && condition[1].name == :id && condition[1].model == model
+          end.flatten
+          resource_id   = id_condition[2]
 
           # TODO: consider refactoring to #read(query, set, many=false)
 
-          response = http_get("/#{resource_name.pluralize}/#{resource_id}")
+          response = http_get("#{ancestry_meta[:path]}/#{resource_name.pluralize}/#{resource_id}")
           return nil if response_failed?(response)
 
           result   = read_result(response, resource_name, { :id => resource_id })
           values   = read_values(result[0], properties, repository)
           resource = model.load(values, query)
         end
-
-        resource
       end
 
       def read_many(query)
         conditions = query.conditions
-
+        
         if conditions.empty? # && query.limit == 1
           raise 'ERROR: not yet handling empty conditions (Resource.first ???)'
         else
@@ -163,7 +165,7 @@ module DataMapper
       def resource_name(model)
         Inflection.underscore(model.name.split('::').last)
       end
-      
+
       def ancestor_name(field_name)
         field_name.to_s.sub(/_id$/, '')
       end
