@@ -11,7 +11,7 @@ Spec::Runner.configure do |config|
     # puts "<pre>"
     DataMapper.setup(:pivotal, {
       :adapter => 'pivotal',
-      :token   => ENV['PIVOTAL_TOKEN'],
+      :token   => ENV['PIVOTALTRACKER_TOKEN'],
       :server  => 'http://www.pivotaltracker.com/services/v1'
     })
     @adapter = DataMapper::Repository.adapters[:pivotal]
