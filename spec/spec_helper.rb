@@ -45,7 +45,7 @@ module Spec::Example::ExampleMethods
       mocked_result = yield
       values = adapter.send(:read_values, mocked_result, query.fields, query.repository.name) 
       query.model.load(values, query)
-    end
+    end.ordered
   end
   
   def mock_read_n(resource_class)
@@ -59,7 +59,7 @@ module Spec::Example::ExampleMethods
           collection.load(values)
         end
       end
-    end
+    end.ordered
   end
 
   def mock_read_halt

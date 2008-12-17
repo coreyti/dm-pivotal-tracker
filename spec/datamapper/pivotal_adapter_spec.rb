@@ -202,12 +202,14 @@ describe DataMapper::Adapters::PivotalAdapter do
           calls
           1. PivotalAdapter#read_one  with query.model = Project
           2. PivotalAdapter#read_many with query.model = Story
+          3. PivotalAdapter#read_one with query.model = Story
           " do
           mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
           mock_read_n(PivotalTracker::Story)   { [{ :name => "Story One", :project_id => 1, :id => 100 }] }
+          mock_read_1(PivotalTracker::Story) { { :name => "Sample Project", :id => 100 } }
           mock_read_halt
 
-          PivotalTracker::Project.get(1).stories.all[0].id.should == 100
+          p PivotalTracker::Project.get(1).stories.first #[0].id.should == 100
         end
       end
       
@@ -220,7 +222,7 @@ describe DataMapper::Adapters::PivotalAdapter do
           " do
           mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
           mock_read_1(PivotalTracker::Story)   { { :name => "Story One", :project_id => 1, :id => 100 } }
-          mock_read_halt
+          # mock_read_halt
 
           PivotalTracker::Project.get(1).stories.first(:id => 100).id.should == 100
         end
@@ -231,10 +233,12 @@ describe DataMapper::Adapters::PivotalAdapter do
           calls
           1. PivotalAdapter#read_one  with query.model = Project
           2. PivotalAdapter#read_many with query.model = Story
+          3. PivotalAdapter#read_one  with query.model = Story
           (less efficient for acquiring a single resource)
           " do
           mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
           mock_read_n(PivotalTracker::Story)   { [{ :name => "Story One", :project_id => 1, :id => 100 }] }
+          mock_read_1(PivotalTracker::Story) { { :name => "Sample Project", :id => 100 } }
           mock_read_halt
 
           PivotalTracker::Project.get(1).stories.get(100).id.should == 100
@@ -246,10 +250,12 @@ describe DataMapper::Adapters::PivotalAdapter do
           calls
           1. PivotalAdapter#read_one  with query.model = Project
           2. PivotalAdapter#read_many with query.model = Story
+          3. PivotalAdapter#read_one  with query.model = Story
           (less efficient for acquiring a single resource)
           " do
           mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
           mock_read_n(PivotalTracker::Story)   { [{ :name => "Story One", :project_id => 1, :id => 100 }] }
+          mock_read_1(PivotalTracker::Story) { { :name => "Sample Project", :id => 100 } }
           mock_read_halt
 
           PivotalTracker::Project.get(1).stories[0].id.should == 100
@@ -263,6 +269,7 @@ describe DataMapper::Adapters::PivotalAdapter do
       before do
         mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
         mock_read_n(PivotalTracker::Story)   { [{ :name => "Story One", :project_id => 1, :id => 100 }] }
+        mock_read_1(PivotalTracker::Story) { { :name => "Sample Project", :id => 100 } }
       end
       
       it "updates the Resource" do
@@ -288,6 +295,7 @@ describe DataMapper::Adapters::PivotalAdapter do
       before do
         mock_read_1(PivotalTracker::Project) { { :name => "Sample Project", :id => 1 } }
         mock_read_n(PivotalTracker::Story)   { [{ :name => "Story One", :project_id => 1, :id => 100 }] }
+        mock_read_1(PivotalTracker::Story) { { :name => "Sample Project", :id => 100 } }
 
         @story = PivotalTracker::Project.get(1).stories.get(100)
       end
